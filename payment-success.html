@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh toán thành công - MHComputer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --text-color: #333;
+            --light-bg: #f8f9fa;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--light-bg);
+            padding: 0;
+            margin: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .success-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .success-icon {
+            color: var(--success-color);
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+        .order-section {
+            margin: 25px 0;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: var(--success-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        .btn-print {
+            background: #17a2b8;
+        }
+        .btn-home {
+            background: #6c757d;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-header">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h1>Thanh toán thành công!</h1>
+            <p>Cảm ơn bạn đã mua hàng tại MHComputer</p>
+        </div>
+
+        <div id="loading-message">
+            <p>Đang tải thông tin đơn hàng...</p>
+        </div>
+
+        <div id="order-container" style="display: none;">
+            <div class="order-section">
+                <h2><i class="fas fa-receipt"></i> Thông tin đơn hàng</h2>
+                <table>
+                    <tr>
+                        <th>Mã đơn hàng</th>
+                        <td id="order-id">-</td>
+                    </tr>
+                    <tr>
+                        <th>Ngày đặt hàng</th>
+                        <td id="order-date">-</td>
+                    </tr>
+                    <tr>
+                        <th>Phương thức thanh toán</th>
+                        <td id="payment-method">-</td>
+                    </tr>
+                    <tr>
+                        <th>Tổng tiền</th>
+                        <td id="order-total">-</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="order-section">
+                <h2><i class="fas fa-user"></i> Thông tin khách hàng</h2>
+                <table>
+                    <tr>
+                        <th>Họ tên</th>
+                        <td id="customer-name">-</td>
+                    </tr>
+                    <tr>
+                        <th>Email</th>
+                        <td id="customer-email">-</td>
+                    </tr>
+                    <tr>
+                        <th>Điện thoại</th>
+                        <td id="customer-phone">-</td>
+                    </tr>
+                    <tr>
+                        <th>Địa chỉ</th>
+                        <td id="customer-address">-</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="order-section">
+                <h2><i class="fas fa-box-open"></i> Chi tiết đơn hàng</h2>
+                <table id="order-items">
+                    <thead>
+                        <tr>
+                            <th>Sản phẩm</th>
+                            <th>Đơn giá</th>
+                            <th>Số lượng</th>
+                            <th>Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Sẽ được thêm bằng JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <a href="#" class="btn btn-print" onclick="window.print()">
+                    <i class="fas fa-print"></i> In hóa đơn
+                </a>
+                <a href="/" class="btn btn-home">
+                    <i class="fas fa-home"></i> Về trang chủ
+                </a>
+            </div>
+        </div>
+
+        <div id="error-message" style="display: none; color: var(--error-color); text-align: center;">
+            <i class="fas fa-exclamation-triangle fa-2x"></i>
+            <h2>Không tìm thấy thông tin đơn hàng</h2>
+            <p>Vui lòng kiểm tra email hoặc liên hệ hỗ trợ</p>
+            <a href="/contact.html" class="btn">Liên hệ hỗ trợ</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Lấy orderId từ URL hoặc localStorage
+                const urlParams = new URLSearchParams(window.location.search);
+                const orderId = urlParams.get('orderId') || localStorage.getItem('currentOrderId');
+                
+                if (!orderId) {
+                    showError();
+                    return;
+                }
+
+                // Giả lập API call - Thay bằng fetch thực tế
+                const order = await mockFetchOrder(orderId);
+                
+                if (order) {
+                    renderOrder(order);
+                    // Lưu vào localStorage để phòng trường hợp refresh trang
+                    localStorage.setItem('currentOrderId', order.id);
+                } else {
+                    showError();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError();
+            }
+        });
+
+        // Hàm giả lập API - Thay bằng fetch thực tế
+        async function mockFetchOrder(orderId) {
+            // Giả lập delay call API
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Dữ liệu mẫu - Thay bằng dữ liệu thực từ API
+            return {
+                id: orderId || 'MH' + Math.floor(Math.random() * 1000000),
+                date: new Date().toISOString(),
+                paymentMethod: 'PayOS',
+                customer: {
+                    name: 'Nguyễn Văn A',
+                    email: 'example@gmail.com',
+                    phone: '0987654321',
+                    address: '123 Đường ABC, Quận 1, TP.HCM'
+                },
+                items: [
+                    { name: 'Laptop Dell XPS 15', price: 25000000, quantity: 1 },
+                    { name: 'Chuột không dây', price: 350000, quantity: 2 },
+                    { name: 'Bàn phím cơ', price: 1200000, quantity: 1 }
+                ]
+            };
+        }
+
+        function renderOrder(order) {
+            document.getElementById('loading-message').style.display = 'none';
+            
+            // Hiển thị thông tin chung
+            document.getElementById('order-id').textContent = order.id;
+            document.getElementById('order-date').textContent = new Date(order.date).toLocaleString('vi-VN');
+            document.getElementById('payment-method').textContent = order.paymentMethod;
+            
+            // Tính tổng tiền
+            const total = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            document.getElementById('order-total').textContent = total.toLocaleString('vi-VN') + ' ₫';
+            
+            // Thông tin khách hàng
+            document.getElementById('customer-name').textContent = order.customer.name;
+            document.getElementById('customer-email').textContent = order.customer.email;
+            document.getElementById('customer-phone').textContent = order.customer.phone;
+            document.getElementById('customer-address').textContent = order.customer.address;
+            
+            // Danh sách sản phẩm
+            const itemsTable = document.querySelector('#order-items tbody');
+            itemsTable.innerHTML = order.items.map(item => `
+                <tr>
+                    <td>${item.name}</td>
+                    <td>${item.price.toLocaleString('vi-VN')} ₫</td>
+                    <td>${item.quantity}</td>
+                    <td>${(item.price * item.quantity).toLocaleString('vi-VN')} ₫</td>
+                </tr>
+            `).join('');
+            
+            // Hiển thị toàn bộ order container
+            document.getElementById('order-container').style.display = 'block';
+        }
+
+        function showError() {
+            document.getElementById('loading-message').style.display = 'none';
+            document.getElementById('error-message').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
